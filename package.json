@@ -1,6 +1,6 @@
 {
-  "name": "promise",
-  "version": "1.0.0",
+  "name": "toy-promise",
+  "version": "0.0.1",
   "description": "",
   "main": "promise.js",
   "scripts": {
