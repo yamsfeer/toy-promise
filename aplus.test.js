@@ -1,3 +1,4 @@
+const Promise = require('./promise')
 const promiseAplusTests = require('promises-aplus-tests')
 
 const adapter = {

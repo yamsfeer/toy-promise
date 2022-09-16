@@ -176,10 +176,46 @@ describe('静态方法', () => {
   })
 })
 
-describe('catch 函数', () => {
+describe('Promise.all', () => {
+  it('子 promise 都 resolved => 主 promise resolve', () => {
+    let tmp = 'pending'
+    const promises = [
+      Promise.resolve(1),
+      new Promise(resolve => setTimeout(() => resolve(2), 500)),
+      new Promise(resolve => setTimeout(() => {
+        tmp = 'resolved'
+        resolve(4)
+      }, 500))
+    ]
+    Promise.all(promises).then(() => assert.equal(tmp, 'resolved'))
+  })
+  it('子 promise 有任何 rejected => 主 promise 立即 rejected', () => {
+    const promises = [
+      Promise.resolve(1),
+      new Promise(resolve => setTimeout(() => resolve(2), 500)),
+      new Promise((resolve, reject) => reject('rejected'))
+    ]
+    Promise.all(promises).then(
+      () => assert.equal(tmp, 'resolved'),
+      reason => assert.equal(reason, 'rejected')
+    )
+  })
+  it('resolve 结果与子 promise 传入时顺序相同', () => {
+    const promises = [
+      Promise.resolve(1),
+      new Promise(resolve => setTimeout(() => resolve(2), 500)),
+      3
+    ]
+    Promise.all(promises).then(
+      arr => assert.equal(arr[2], 3)
+    )
+  })
+})
+
+describe('Promise.catch', () => {
   it('捕获错误', () => {
     new Promise(resolve => { throw new Error('reject') })
       .then(() => { throw new Error('reject') })
-      // .catch(err => assert.equal(err, 'reje2ct'))
+      .catch(err => assert.equal(err, 'reje2ct'))
   })
 })
