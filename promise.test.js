@@ -181,18 +181,18 @@ describe('Promise.all', () => {
     let tmp = 'pending'
     const promises = [
       Promise.resolve(1),
-      new Promise(resolve => setTimeout(() => resolve(2), 500)),
+      new Promise(resolve => setTimeout(() => resolve(2), 300)),
       new Promise(resolve => setTimeout(() => {
         tmp = 'resolved'
         resolve(4)
-      }, 500))
+      }, 300))
     ]
     Promise.all(promises).then(() => assert.equal(tmp, 'resolved'))
   })
   it('子 promise 有任何 rejected => 主 promise 立即 rejected', () => {
     const promises = [
       Promise.resolve(1),
-      new Promise(resolve => setTimeout(() => resolve(2), 500)),
+      new Promise(resolve => setTimeout(() => resolve(2), 300)),
       new Promise((resolve, reject) => reject('rejected'))
     ]
     Promise.all(promises).then(
@@ -203,19 +203,18 @@ describe('Promise.all', () => {
   it('resolve 结果与子 promise 传入时顺序相同', () => {
     const promises = [
       Promise.resolve(1),
-      new Promise(resolve => setTimeout(() => resolve(2), 500)),
+      new Promise(resolve => setTimeout(() => resolve(2), 300)),
       3
     ]
-    Promise.all(promises).then(
-      arr => assert.equal(arr[2], 3)
-    )
+    Promise.all(promises)
+      .then(arr => assert.equal(arr[2], 3))
   })
 })
 
-describe('Promise.catch', () => {
+describe('Promise.prototype.catch', () => {
   it('捕获错误', () => {
     new Promise(resolve => { throw new Error('reject') })
       .then(() => { throw new Error('reject') })
-      .catch(err => assert.equal(err, 'reje2ct'))
+      .catch(err => assert.equal(err, 'reject'))
   })
 })
