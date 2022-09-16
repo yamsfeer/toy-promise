@@ -1,18 +1,18 @@
-const Promise = require('./promise')
+const TPromise = require('./main')
 const { assert } = require('chai')
 
 describe('基本', () => {
   it('new', () => {
-    const promise = new Promise((resolve, reject) => {
+    const promise = new TPromise((resolve, reject) => {
       resolve('resolve')
       reject('reject')
     })
 
-    assert.equal(promise instanceof Promise, true)
+    assert.equal(promise instanceof TPromise, true)
   })
 
   it('then 获取 resolve 值', () => {
-    new Promise((resolve, reject) => {
+    new TPromise((resolve, reject) => {
       resolve('resolve')
       reject('reject')
     }).then(
@@ -22,7 +22,7 @@ describe('基本', () => {
   })
 
   it('then 获取 reject 值', () => {
-    new Promise((resolve, reject) => reject('reject'))
+    new TPromise((resolve, reject) => reject('reject'))
       .then(
         value => assert.equal(value, 'resolve'),
         reason => assert.equal(reason, 'reject'),
@@ -32,7 +32,7 @@ describe('基本', () => {
 
 describe('异步逻辑', () => {
   it('异步 resolve', () => {
-    new Promise(resolve => setTimeout(() => resolve('resolve'), 100))
+    new TPromise(resolve => setTimeout(() => resolve('resolve'), 100))
       .then(
         value => assert.equal(value, 'resolve'),
         reason => assert.equal(reason, 'reject'),
@@ -40,7 +40,7 @@ describe('异步逻辑', () => {
   })
 
   it('异步 reject', () => {
-    new Promise((resolve, reject) => setTimeout(() => reject('reject'), 100))
+    new TPromise((resolve, reject) => setTimeout(() => reject('reject'), 100))
       .then(
         value => assert.equal(value, 'resolve'),
         reason => assert.equal(reason, 'reject'),
@@ -50,7 +50,7 @@ describe('异步逻辑', () => {
 
 describe('多个 then 函数', () => {
   it('then 函数添加多个回调', () => {
-    const promise = new Promise(resolve => {
+    const promise = new TPromise(resolve => {
       setTimeout(() => resolve('resolve'), 100)
     })
 
@@ -63,7 +63,7 @@ describe('多个 then 函数', () => {
   })
 
   it('then 链式调用返回普通值', () => {
-    new Promise(resolve => 1)
+    new TPromise(resolve => 1)
       .then(value => {
         assert.equal(value, 1)
         return 2
@@ -74,22 +74,22 @@ describe('多个 then 函数', () => {
   })
 
   it('then 链式调用返回新 promise', () => {
-    new Promise(resolve => 1)
+    new TPromise(resolve => 1)
       .then(value => {
         assert.equal(value, 1)
-        return new Promise(resolve => resolve(2))
+        return new TPromise(resolve => resolve(2))
       })
       .then(value => {
         assert.equal(value, 2)
-        return new Promise(resolve => setTimeout(() => {
-          resolve(new Promise(resolve => resolve(3)))
+        return new TPromise(resolve => setTimeout(() => {
+          resolve(new TPromise(resolve => resolve(3)))
         }, 100))
       })
       .then(value => assert.equal(value, 3))
   })
 
   it('then 链式调用返回 promise 本身', () => {
-    const promise = new Promise(resolve => 1)
+    const promise = new TPromise(resolve => 1)
       .then(value => {
         assert.equal(value, 1)
         return promise
@@ -103,7 +103,7 @@ describe('多个 then 函数', () => {
 
 describe('捕获错误', () => {
   it('执行器错误', () => {
-    new Promise(() => {
+    new TPromise(() => {
       throw new Error('executor error')
     })
       .then(
@@ -113,7 +113,7 @@ describe('捕获错误', () => {
   })
 
   it('then resolve 执行错误', () => {
-    new Promise(resolve => resolve(1))
+    new TPromise(resolve => resolve(1))
       .then(() => { throw new Error('then resolve error')})
       .then(
         () => {},
@@ -122,7 +122,7 @@ describe('捕获错误', () => {
   })
 
   it('then reject 执行错误', () => {
-    new Promise(resolve => resolve(1))
+    new TPromise(resolve => resolve(1))
       .then(
         () => {},
         () => { throw new Error('then reject error') }
@@ -136,7 +136,7 @@ describe('捕获错误', () => {
 
 describe('默认处理函数', () => {
   it('默认 fullfill 处理函数', () => {
-    new Promise(resolve => resolve(1))
+    new TPromise(resolve => resolve(1))
       .then()
       .then()
       .then(
@@ -144,7 +144,7 @@ describe('默认处理函数', () => {
       )
   })
   it('默认 reject 处理函数', () => {
-    new Promise((resolve, reject) => reject('reject'))
+    new TPromise((resolve, reject) => reject('reject'))
       .then()
       .then()
       .then(
@@ -156,64 +156,64 @@ describe('默认处理函数', () => {
 
 describe('静态方法', () => {
   it('resolve 静态方法', () => {
-    Promise.resolve(1).then(value => assert.equal(value, 1))
+    TPromise.resolve(1).then(value => assert.equal(value, 1))
 
-    const promise = new Promise(resolve => resolve(2))
-    Promise.resolve(promise).then(value => assert.equal(value, 2))
+    const promise = new TPromise(resolve => resolve(2))
+    TPromise.resolve(promise).then(value => assert.equal(value, 2))
   })
 
   it('reject 静态方法', () => {
-    Promise.reject(1).then(
+    TPromise.reject(1).then(
       null,
       value => assert.equal(value, 1)
     )
 
-    const promise = new Promise((resolve, reject) => reject(2))
-    Promise.reject(promise).then(
+    const promise = new TPromise((resolve, reject) => reject(2))
+    TPromise.reject(promise).then(
       null,
       value => assert.equal(value, 2)
     )
   })
 })
 
-describe('Promise.all', () => {
+describe('TPromise.all', () => {
   it('子 promise 都 resolved => 主 promise resolve', () => {
     let tmp = 'pending'
     const promises = [
-      Promise.resolve(1),
-      new Promise(resolve => setTimeout(() => resolve(2), 300)),
-      new Promise(resolve => setTimeout(() => {
+      TPromise.resolve(1),
+      new TPromise(resolve => setTimeout(() => resolve(2), 300)),
+      new TPromise(resolve => setTimeout(() => {
         tmp = 'resolved'
         resolve(4)
       }, 300))
     ]
-    Promise.all(promises).then(() => assert.equal(tmp, 'resolved'))
+    TPromise.all(promises).then(() => assert.equal(tmp, 'resolved'))
   })
   it('子 promise 有任何 rejected => 主 promise 立即 rejected', () => {
     const promises = [
-      Promise.resolve(1),
-      new Promise(resolve => setTimeout(() => resolve(2), 300)),
-      new Promise((resolve, reject) => reject('rejected'))
+      TPromise.resolve(1),
+      new TPromise(resolve => setTimeout(() => resolve(2), 300)),
+      new TPromise((resolve, reject) => reject('rejected'))
     ]
-    Promise.all(promises).then(
+    TPromise.all(promises).then(
       () => assert.equal(tmp, 'resolved'),
       reason => assert.equal(reason, 'rejected')
     )
   })
   it('resolve 结果与子 promise 传入时顺序相同', () => {
     const promises = [
-      Promise.resolve(1),
-      new Promise(resolve => setTimeout(() => resolve(2), 300)),
+      TPromise.resolve(1),
+      new TPromise(resolve => setTimeout(() => resolve(2), 300)),
       3
     ]
-    Promise.all(promises)
+    TPromise.all(promises)
       .then(arr => assert.equal(arr[2], 3))
   })
 })
 
-describe('Promise.prototype.catch', () => {
+describe('TPromise.prototype.catch', () => {
   it('捕获错误', () => {
-    new Promise(resolve => { throw new Error('reject') })
+    new TPromise(resolve => { throw new Error('reject') })
       .then(() => { throw new Error('reject') })
       .catch(err => assert.equal(err, 'reject'))
   })

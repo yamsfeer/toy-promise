@@ -11,7 +11,7 @@ function isThenable(p) {
 }
 
 
-class Promise {
+class TPromise {
   constructor(executor) {
     try {
       executor(this.resolve, this.reject)
@@ -66,11 +66,11 @@ class Promise {
       ? onReject
       : reason => { throw reason }
 
-    const promise2 = new Promise((resolve, reject) => {
+    const promise2 = new TPromise((resolve, reject) => {
       const fulfilledMicrotask = () => {
         queueMicrotask(() => {
           try {
-            Promise.resolvePromise(promise2, onFulfill(this.value), resolve, reject)
+            TPromise.resolvePromise(promise2, onFulfill(this.value), resolve, reject)
           } catch (err) {
             reject(err)
           }
@@ -80,7 +80,7 @@ class Promise {
       const rejectedMicrotask = () => {
         queueMicrotask(() => {
           try {
-            Promise.resolvePromise(promise2, onReject(this.reason), resolve, reject)
+            TPromise.resolvePromise(promise2, onReject(this.reason), resolve, reject)
           } catch (err) {
             reject(err)
           }
@@ -110,7 +110,7 @@ class Promise {
 
   /**
    *
-   * @param {Promise} promise2 then 函数返回的新 promise
+   * @param {TPromise} promise2 then 函数返回的新 promise
    * @param {any} userReturn onFulfill 或 onReject 处理函数中用户代码的返回值，可能是一个新 promise 对象
    * @param {function} resolve promise2 的 resolve 函数，已用箭头函数绑定 this
    * @param {function} reject promise2 的 reject 函数，已用箭头函数绑定 this
@@ -119,26 +119,26 @@ class Promise {
   static resolvePromise(promise2, userReturn, resolve, reject) {
     if (promise2 === userReturn) {
       /* then 处理函数中，用户代码返回自身会形成循环
-         let promise2 = Promise.resolve().then(() => promise2) */
+         let promise2 = TPromise.resolve().then(() => promise2) */
       return reject(new TypeError('chaining cycle detected for promise'))
     }
 
-    userReturn instanceof Promise || isThenable(userReturn)
+    userReturn instanceof TPromise || isThenable(userReturn)
       ? userReturn.then(resolve, reject) // then 函数中返回新的 promise，需要等这个 promise resolve
       : resolve(userReturn) // 普通值
   }
 
-  /* 以下是 ES6 的一些方法，不属于 Promise/A+ */
+  /* 以下是 ES6 的一些方法，不属于 TPromise/A+ */
   static resolve(target) {
-    return target instanceof Promise
+    return target instanceof TPromise
       ? target
-      : new Promise(resolve => resolve(target))
+      : new TPromise(resolve => resolve(target))
   }
 
   static reject(target) {
-    return target instanceof Promise
+    return target instanceof TPromise
       ? target
-      : new Promise((resolve, reject) => reject(target))
+      : new TPromise((resolve, reject) => reject(target))
   }
 
   // catch 是 then(null, rejection) 的别名，用于指定发生错误时的回调
@@ -148,7 +148,7 @@ class Promise {
 
   // 不管 promise 最后状态如何都会执行
   finally(fn) {
-    const p = Promise.resolve(fn())
+    const p = TPromise.resolve(fn())
     return this.then(
       value => p.then(() => value),
       error => p.then(() => { throw error })
@@ -158,7 +158,7 @@ class Promise {
   // 所有子 promise 都 fulfill
   // 任意子 promise reject，即 reject
   static all(promises) {
-    return new Promise((resolve, reject) => {
+    return new TPromise((resolve, reject) => {
       let result = []
       let count = 0
       let length = promises.length
@@ -168,7 +168,7 @@ class Promise {
       }
 
       promises.forEach((p, index) => {
-        Promise.resolve(p) // 防止数组中有非 promise
+        TPromise.resolve(p) // 防止数组中有非 promise
           .then(value => {
             result[index] = value // 与传入顺序相同，与 resolve 顺序无关
             count++
@@ -184,13 +184,13 @@ class Promise {
   // 任意子 promise fulfill，即 resolve
   // 任意子 promise reject，即 reject
   static race(promises) {
-    return new Promise((resolve, reject) => {
+    return new TPromise((resolve, reject) => {
       if (promises.length === 0) {
         return resolve()
       }
 
       promises.forEach(p => {
-        Promise.resolve(p) // 防止有非 promise
+        TPromise.resolve(p) // 防止有非 promise
           .then(
             value => resolve(value), // 任一子 promise fulfill，即 resolve
             reason => reject(reason) // 任一子 promise reject，即 reject
@@ -202,7 +202,7 @@ class Promise {
   // 任一个 fulfil，即 resolve
   // 所有都 reject，才 reject
   static any(promises) {
-    return new Promise((resolve, reject) => {
+    return new TPromise((resolve, reject) => {
       let count = 0
       let result = []
       let length = promises.length
@@ -212,7 +212,7 @@ class Promise {
       }
 
       promises.forEach((p, index) => {
-        Promise.resolve(p)
+        TPromise.resolve(p)
           .then(
             value => resolve(value),
             reason => {
@@ -230,7 +230,7 @@ class Promise {
   // 返回一个数组，数组元素结构为 { status: 'fulfilled', value: v } 或 { status: 'rejected', reason: error }
   // https://github.com/tc39/proposal-promise-allSettled
   static allSettled(proimises) {
-    return new Promise(resolve => { // 除非本身有错误，否则不会 reject
+    return new TPromise(resolve => { // 除非本身有错误，否则不会 reject
       let count = 0
       let result = []
       let length = proimises.length
@@ -258,11 +258,11 @@ class Promise {
             resolve(result)
           }
         }
-        Promise.resolve(p).then(onFulfill, onReject)
+        TPromise.resolve(p).then(onFulfill, onReject)
       })
     })
   }
 
 }
 
-module.exports = Promise
+module.exports = TPromise

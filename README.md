@@ -1,4 +1,4 @@
-promise/A+ 规范的 promise，学习用。
+promise/A+ 规范的 promise ( 学习用 )。
 
 ```shell
 npm run test # 执行开发时测试

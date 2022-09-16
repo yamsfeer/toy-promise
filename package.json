@@ -1,8 +1,8 @@
 {
   "name": "@yamstoy/toy-promise",
-  "version": "0.0.1",
-  "description": "promise/A+ 规范的 promise，学习用。",
-  "main": "promise.js",
+  "version": "0.1.0",
+  "description": "promise/A+ 规范的 promise ( 学习用 )",
+  "main": "main.js",
   "scripts": {
     "test": "mocha promise.test.js",
     "aplus": "promises-aplus-tests aplus.test.js",
