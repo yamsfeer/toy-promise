@@ -1,6 +1,6 @@
 {
   "name": "@yamstoy/toy-promise",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "promise/A+ 规范的 promise ( 学习用 )",
   "main": "main.js",
   "scripts": {

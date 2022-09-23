@@ -1,8 +1,10 @@
 const TPromise = require('./main')
 const { assert } = require('chai')
 
-describe('基本', () => {
-  it('new', () => {
+const noop = () => {}
+
+describe('basic', () => {
+  it('new', async () => {
     const promise = new TPromise((resolve, reject) => {
       resolve('resolve')
       reject('reject')
@@ -11,18 +13,13 @@ describe('基本', () => {
     assert.equal(promise instanceof TPromise, true)
   })
 
-  it('then 获取 resolve 值', () => {
-    new TPromise((resolve, reject) => {
-      resolve('resolve')
-      reject('reject')
-    }).then(
-      value => assert.equal(value, 'resolve'),
-      reason => assert.equal(reason, 'reject'),
-    )
+  it('then 获取 resolve 值', async () => {
+    await new TPromise(resolve => resolve('resolve'))
+      .then(value => assert.equal(value, 'resolve'))
   })
 
-  it('then 获取 reject 值', () => {
-    new TPromise((resolve, reject) => reject('reject'))
+  it('then 获取 reject 值', async () => {
+    await new TPromise((resolve, reject) => reject('reject'))
       .then(
         value => assert.equal(value, 'resolve'),
         reason => assert.equal(reason, 'reject'),
@@ -31,16 +28,16 @@ describe('基本', () => {
 })
 
 describe('异步逻辑', () => {
-  it('异步 resolve', () => {
-    new TPromise(resolve => setTimeout(() => resolve('resolve'), 100))
+  it('异步 resolve', async () => {
+    await new TPromise(resolve => setTimeout(() => resolve('resolve'), 100))
       .then(
         value => assert.equal(value, 'resolve'),
         reason => assert.equal(reason, 'reject'),
       )
   })
 
-  it('异步 reject', () => {
-    new TPromise((resolve, reject) => setTimeout(() => reject('reject'), 100))
+  it('异步 reject', async () => {
+    await new TPromise((resolve, reject) => setTimeout(() => reject('reject'), 100))
       .then(
         value => assert.equal(value, 'resolve'),
         reason => assert.equal(reason, 'reject'),
@@ -48,8 +45,8 @@ describe('异步逻辑', () => {
   })
 })
 
-describe('多个 then 函数', () => {
-  it('then 函数添加多个回调', () => {
+describe('then', () => {
+  it('then 函数添加多个回调', async () => {
     const promise = new TPromise(resolve => {
       setTimeout(() => resolve('resolve'), 100)
     })
@@ -57,13 +54,15 @@ describe('多个 then 函数', () => {
     const callbacks = []
     promise.then(value => callbacks.push(value))
     promise.then(value => callbacks.push(value))
-    promise.then(value => callbacks.push(value))
 
-    promise.then(() => assert.equal(callbacks.length, 3))
+    promise.then(() => {
+      assert.equal(callbacks.length, 1)
+    })
+    await promise
   })
 
-  it('then 链式调用返回普通值', () => {
-    new TPromise(resolve => 1)
+  it('then 链式调用返回普通值', async () => {
+    await TPromise.resolve(1)
       .then(value => {
         assert.equal(value, 1)
         return 2
@@ -73,148 +72,216 @@ describe('多个 then 函数', () => {
       })
   })
 
-  it('then 链式调用返回新 promise', () => {
-    new TPromise(resolve => 1)
+  it('then 链式调用返回新 promise', async () => {
+    await TPromise.resolve(1)
       .then(value => {
         assert.equal(value, 1)
         return new TPromise(resolve => resolve(2))
       })
       .then(value => {
         assert.equal(value, 2)
-        return new TPromise(resolve => setTimeout(() => {
-          resolve(new TPromise(resolve => resolve(3)))
-        }, 100))
+        return new TPromise(resolve => setTimeout(() => resolve(3), 100))
       })
       .then(value => assert.equal(value, 3))
   })
 
-  it('then 链式调用返回 promise 本身', () => {
-    const promise = new TPromise(resolve => 1)
-      .then(value => {
-        assert.equal(value, 1)
-        return promise
-      })
-      .then(
-        () => {},
-        reason => assert.equal(reason, '2chaining cycle detected for promise')
-      )
-  })
+  /* it('then 链式调用返回 promise 本身', async () => {
+    const promise = await TPromise.resolve()
+      .then(() => promise) // Cannot access 'promise' before initialization
+      .then(noop, reason => assert.exists(reason))
+  }) */
 })
 
 describe('捕获错误', () => {
-  it('执行器错误', () => {
-    new TPromise(() => {
-      throw new Error('executor error')
-    })
-      .then(
-        () => {},
-        reason => assert.equal(reason, 'executor error')
-      )
+  it('执行器错误', async () => {
+    await new TPromise(() => { throw new Error('executor error') })
+      .then(noop, reason => assert.exists(reason))
   })
 
-  it('then resolve 执行错误', () => {
-    new TPromise(resolve => resolve(1))
-      .then(() => { throw new Error('then resolve error')})
-      .then(
-        () => {},
-        reason => assert.equal(reason, 'then resolve error')
-      )
+  it('then resolve 执行错误', async () => {
+    await new TPromise(resolve => resolve(1))
+      .then(() => { throw new Error('then resolve error') })
+      .then(noop, reason => assert.exists(reason))
   })
 
-  it('then reject 执行错误', () => {
-    new TPromise(resolve => resolve(1))
-      .then(
-        () => {},
-        () => { throw new Error('then reject error') }
-      )
-      .then(
-        () => {},
-        reason => assert.equal(reason, 'then reject error')
-      )
+  it('then reject 执行错误', async () => {
+    await TPromise.reject(1)
+      .then(noop, () => { throw new Error('then reject error') })
+      .then(noop, reason => assert.exists(reason))
   })
 })
 
 describe('默认处理函数', () => {
-  it('默认 fullfill 处理函数', () => {
-    new TPromise(resolve => resolve(1))
+  it('默认 fulfill 处理函数', async () => {
+    await TPromise.resolve('resolve')
       .then()
       .then()
       .then(
-        value => assert.equal(value, 1)
+        value => assert.equal(value, 'resolve')
       )
   })
-  it('默认 reject 处理函数', () => {
-    new TPromise((resolve, reject) => reject('reject'))
+  it('默认 reject 处理函数', async () => {
+    await TPromise.reject('reject')
       .then()
       .then()
       .then(
-        null,
-        reason => assert.equal(reason, reject)
+        noop,
+        reason => assert.equal(reason, 'reject')
       )
   })
 })
 
-describe('静态方法', () => {
-  it('resolve 静态方法', () => {
-    TPromise.resolve(1).then(value => assert.equal(value, 1))
 
-    const promise = new TPromise(resolve => resolve(2))
-    TPromise.resolve(promise).then(value => assert.equal(value, 2))
+
+/* 以下是非 Promise/A+ 方法 */
+
+describe('TPromise.resolve', () => {
+  it('resolve 基本值', async () => {
+    await TPromise.resolve(1).then(value => assert.equal(value, 1))
   })
 
-  it('reject 静态方法', () => {
-    TPromise.reject(1).then(
-      null,
+  it('resolve promise', async () => {
+    const promise = new TPromise(resolve => resolve(2))
+    await TPromise.resolve(promise).then(value => assert.equal(value, 2))
+  })
+})
+
+describe('TPromise.reject', () => {
+  it('reject 基本值', async () => {
+    await TPromise.reject(1).then(
+      noop,
       value => assert.equal(value, 1)
     )
-
+  })
+  it('reject promise', async () => {
     const promise = new TPromise((resolve, reject) => reject(2))
-    TPromise.reject(promise).then(
-      null,
+    await TPromise.reject(promise).then(
+      noop,
       value => assert.equal(value, 2)
     )
   })
 })
 
-describe('TPromise.all', () => {
-  it('子 promise 都 resolved => 主 promise resolve', () => {
-    let tmp = 'pending'
-    const promises = [
-      TPromise.resolve(1),
-      new TPromise(resolve => setTimeout(() => resolve(2), 300)),
-      new TPromise(resolve => setTimeout(() => {
-        tmp = 'resolved'
-        resolve(4)
-      }, 300))
-    ]
-    TPromise.all(promises).then(() => assert.equal(tmp, 'resolved'))
+describe('TPromise.prototype.finally', () => {
+  it('resolve 的 promise 调用回调', async () => {
+    await TPromise.resolve(1)
+      .finally(() => assert.equal(1, 1))
   })
-  it('子 promise 有任何 rejected => 主 promise 立即 rejected', () => {
-    const promises = [
-      TPromise.resolve(1),
-      new TPromise(resolve => setTimeout(() => resolve(2), 300)),
-      new TPromise((resolve, reject) => reject('rejected'))
-    ]
-    TPromise.all(promises).then(
-      () => assert.equal(tmp, 'resolved'),
-      reason => assert.equal(reason, 'rejected')
-    )
-  })
-  it('resolve 结果与子 promise 传入时顺序相同', () => {
-    const promises = [
-      TPromise.resolve(1),
-      new TPromise(resolve => setTimeout(() => resolve(2), 300)),
-      3
-    ]
-    TPromise.all(promises)
-      .then(arr => assert.equal(arr[2], 3))
+  it('reject 的 promise 调用回调', async () => {
+    await TPromise.reject('reject')
+      .finally(() => assert.equal(1, 1))
+      .catch(err => assert.equal(err, 'reject'))
   })
 })
 
-describe('TPromise.prototype.catch', () => {
-  it('捕获错误', () => {
-    new TPromise(resolve => { throw new Error('reject') })
+describe('TPromise.prototype.catch', async () => {
+  it('捕获错误', async () => {
+    await new TPromise(resolve => { throw new Error('reject') })
       .then(() => { throw new Error('reject') })
       .catch(err => assert.equal(err, 'reject'))
+  })
+})
+
+
+describe('TPromise.all', () => {
+  let tmp = 'pending'
+  const promises = [
+    TPromise.resolve(1),
+    new TPromise(resolve => setTimeout(() => resolve(2), 100)),
+    new TPromise(resolve => setTimeout(() => {
+      tmp = 'all resolved'
+      resolve(4)
+    }, 200)),
+    'basic value',
+  ]
+  it('传入空数组', async () => {
+    await TPromise.all([])
+      .then(data => assert.equal(data.length, 0))
+  })
+  it('子 promise 都 resolved => resolve', async () => {
+    await TPromise.all(promises)
+      .then(() => assert.equal(tmp, 'all resolved'))
+  })
+  it('子 promise 有任何 rejected => 立即 rejected', async () => {
+    await TPromise.all([
+      ...promises,
+      TPromise.reject('rejected')
+    ])
+      .then(noop, reason => assert.equal(reason, 'rejected'))
+  })
+  it('resolve 结果与传入顺序相同', async () => {
+    await TPromise.all(promises)
+      .then(arr => assert.equal(arr[arr.length - 1], 'basic value'))
+  })
+})
+
+describe('TPromise.race', () => {
+  const promises = [
+    TPromise.resolve('first fulfill'),
+    new TPromise(resolve => setTimeout(() => resolve(2), 100)),
+    'basic value',
+  ]
+
+  it('传入空数组', async () => {
+    await TPromise.race([])
+      .then(data => assert.isUndefined(data))
+  })
+
+  it('子 promise fulfill => resolve', async () => {
+    await TPromise.race(promises)
+      .then(value => assert.equal(value, 'first fulfill'))
+  })
+  it('子 promise reject => reject', async () => {
+    await TPromise.race([
+      TPromise.reject('race rejected'),
+      ...promises,
+    ])
+      .then(noop, reason => assert.equal(reason, 'race rejected'))
+  })
+})
+
+describe('TPromise.any', () => {
+  it('传入空数组', async () => {
+    await TPromise.any([])
+      .then(data => assert.isUndefined(data))
+  })
+  it('任一个 fulfill => resolve', async () => {
+    await TPromise.any([
+      TPromise.resolve('first fulfill'),
+      new TPromise(resolve => setTimeout(() => resolve(3), 100)),
+    ])
+      .then(value => assert.equal(value, 'first fulfill'))
+  })
+  it('所有都 reject => reject', async () => {
+    await TPromise.any([
+      TPromise.reject(1),
+      new TPromise((resolve, reject) => reject(2)),
+    ])
+      .then(noop, reason => assert.exists(reason))
+  })
+})
+
+describe('TPromise.allSettled', () => {
+  it('传入空数组', async () => {
+    await TPromise.allSettled([])
+      .then(data => assert.equal(data.length, 0))
+  })
+  it('子 promise 都 reject => resolve', async () => {
+    await TPromise.allSettled([
+      new TPromise((resolve, reject) => setTimeout(() => reject('reject1'), 100)),
+      TPromise.reject('reject2'),
+    ])
+      .then(value => {
+        assert.equal(value[0].status, 'rejected')
+        assert.equal(value[0].reason, 'reject1')
+      })
+  })
+  it('子 promise 都 fulfill 或 reject => resolve', async () => {
+    await TPromise.allSettled([
+      new TPromise(resolve => setTimeout(() => resolve(2), 100)),
+      TPromise.reject('rejected'),
+      'basic value',
+    ])
+      .then(value => assert.equal(value.length, 3))
   })
 })

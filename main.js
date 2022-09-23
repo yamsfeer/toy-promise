@@ -119,7 +119,9 @@ class TPromise {
   static resolvePromise(promise2, userReturn, resolve, reject) {
     if (promise2 === userReturn) {
       /* then 处理函数中，用户代码返回自身会形成循环
-         let promise2 = TPromise.resolve().then(() => promise2) */
+         let promise2 = TPromise.resolve().then(() => promise2)
+         然而事实上，这会报错：Cannot access 'promise' before initialization
+         需要异步任务执行才可能发生这种情况 */
       return reject(new TypeError('chaining cycle detected for promise'))
     }
 

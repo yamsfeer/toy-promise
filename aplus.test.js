@@ -1,5 +1,4 @@
 const TPromise = require('./main')
-const promiseAplusTests = require('promises-aplus-tests')
 
 const adapter = {
   pending() {
@@ -11,4 +10,5 @@ const adapter = {
     return result
   }
 }
-promiseAplusTests(adapter)
+
+module.exports = adapter
